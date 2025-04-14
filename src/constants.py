@@ -89,26 +89,31 @@ class APINode:
         self.__parent = parent # can be None
         self.isLeaf = False # if it's a leaf, then it's a table
 
-        # give it attributes by running through the children dict recusrively.
-        # eg the url https://px.hagstofa.is/pxen/api/v1/en/Atvinnuvegir/ferdathjonusta/ferdaidnadurhagvisar
-        # should be retrieved by obj.Atvinnuvegir.Tourism.Short_term_indicators_in_tourism
-        # so englishName has a purpose.
-        # obviously the latter is so much more readable than the former.
-        # also user friendly
         self.__recurse()
 
     def __recurse(self):
+        '''
+        give it attributes by running through the children dict recusrively.
+        eg the url https://px.hagstofa.is/pxen/api/v1/en/Atvinnuvegir/ferdathjonusta/ferdaidnadurhagvisar
+        should be retrieved by obj.Atvinnuvegir.Tourism.Short_term_indicators_in_tourism
+        so englishName has a purpose.
+        obviously the latter is so much more readable than the former.
+        also user friendly
+        '''        
         if self.__children.get('leaf'):
             self.isLeaf = True
             return
-        
         for pathComponent, children in self.__children.items():
             tmp = APINode(pathComponent=pathComponent, parent=self, children=children)
             typableEnglishName = toTypable(tmp.__englishName)
             setattr(self, typableEnglishName, tmp)
     
     @property
-    def str(self):
+    def englishName(self)->str:
+        return str(self.__englishName)
+    
+    @property
+    def str(self)->str:
         if self.__parent:
             return f"{self.__parent.str}/{self.__pathComponent}"
         else:
