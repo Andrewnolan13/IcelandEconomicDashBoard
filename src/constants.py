@@ -1,13 +1,14 @@
 from os.path import dirname, abspath, join
 from enum import Enum
-from urllib.parse import urljoin
-from .utils import override
 
+__all__ = ['RateLimit', 'PATH', 'SOURCE', 'APINode', 'ENDPOINTS']
 
 # Rate limits
 class RateLimit(Enum):
+    '''
+    Overkill but makes code readable
+    '''
     TenSecondly = 10 # ten requests per ten seconds window. ie 10 requests can be made within a 1 - second window but not more than 10 in 10s. Else 429 error
-
 
 # Safe but conveient path resolution
 class PATH:
@@ -57,30 +58,70 @@ class PATH:
 
 DB = PATH(value = 'database.db')
 DATA = PATH(value = 'data',DB = DB)
-SOURCE = PATH(value = abspath(join(dirname(__file__),'..')),DATA = DATA)
+ASSETS = PATH(value = 'assets',ENDPOINT_TREE = PATH('endpointTree.json'))
+SOURCE = PATH(value = abspath(join(dirname(__file__),'..')),DATA = DATA,ASSETS = ASSETS)
 
 # urls
-endpoint =  'https://px.hagstofa.is/pxen/api/v1/en/'
+import re
+import json
 
-class URL(PATH):
-    @override
-    @property
-    def str(self)->str:
-        if self.parent is None:
-            return self.value
-        return urljoin(self.parent.str, self.value)
+pattern = re.compile(r"\d+\-\d+")
+
+def toTypable(s:str) -> str:
+    """Convert a string to a typable format by removing special characters and replacing spaces with underscores."""
+    s = re.sub(r"[^a-zA-Z0-9_\-]", "_", s)
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(pattern, lambda m: m.group(0).replace("-", "_to_"), s)
+    return s
+
+class APINode:
+    '''
+    similar idea to PATH but read from json
+    makes code readable
+    prevents typos
+    all dat
+    '''
+    BASE_URL = "https://px.hagstofa.is/pxen/api/v1/en"
+    def __init__(self, pathComponent:str,parent:'APINode', children:dict=dict()):
+        self.__pathComponent = pathComponent
+        self.__children = children.copy() #shallow good
+        self.__englishName = self.__children.pop('englishName', 'baseURL') 
+        self.__parent = parent # can be None
+        self.isLeaf = False # if it's a leaf, then it's a table
+
+        # give it attributes by running through the children dict recusrively.
+        # eg the url https://px.hagstofa.is/pxen/api/v1/en/Atvinnuvegir/ferdathjonusta/ferdaidnadurhagvisar
+        # should be retrieved by obj.Atvinnuvegir.Tourism.Short_term_indicators_in_tourism
+        # so englishName has a purpose.
+        # obviously the latter is so much more readable than the former.
+        # also user friendly
+        self.__recurse()
+
+    def __recurse(self):
+        if self.__children.get('leaf'):
+            self.isLeaf = True
+            return
+        
+        for pathComponent, children in self.__children.items():
+            tmp = APINode(pathComponent=pathComponent, parent=self, children=children)
+            typableEnglishName = toTypable(tmp.__englishName)
+            setattr(self, typableEnglishName, tmp)
     
-INDUSTRIES = URL(value = 'Atvinnuvegir')
-ECONOMY = URL(value = 'Efnahagur')
-RESIDENTS = URL(value = 'Ibuar')
-SOCIETY = URL(value = 'Samfelag')
-ENVIRONMENT = URL(value = 'Umhverfi')
+    @property
+    def str(self):
+        if self.__parent:
+            return f"{self.__parent.str}/{self.__pathComponent}"
+        else:
+            return self.__pathComponent
 
-ENDPOINT = URL(value = endpoint,
-                INDUSTRIES = INDUSTRIES,
-                ECONOMY = ECONOMY,
-                RESIDENTS = RESIDENTS,
-                SOCIETY = SOCIETY,
-                ENVIRONMENT = ENVIRONMENT)
+    def __str__(self):
+        return self.str
 
+    def __repr__(self):
+        return f"<APINode {self}>"
+    
+
+with open(SOURCE.ASSETS.ENDPOINT_TREE.str, 'r') as f:
+    tree = json.load(f)
+    ENDPOINTS = APINode(pathComponent=APINode.BASE_URL, parent=None, children=tree)
 
