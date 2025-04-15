@@ -1,6 +1,26 @@
 import sqlite3
 import datetime as dt
 from .constants import RateLimit, SOURCE
+import re
+import requests
+import pandas as pd
+from io import StringIO
+
+pattern = re.compile(r"\d+\-\d+")
+
+def toTypable(s:str) -> str:
+    """Convert a string to a typable format by removing special characters and replacing spaces with underscores."""
+    s = re.sub(r"[^a-zA-Z0-9_\-]", "_", s)
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(pattern, lambda m: m.group(0).replace("-", "_to_"), s)
+    return s
+
+def convert_to_df(response:requests.Request)->pd.DataFrame:
+    return pd.read_csv(
+        StringIO(response.text.lstrip('ï»¿')),
+        sep=',',
+        encoding='utf-8'
+    ) 
 
 def override(f):
     '''
@@ -26,7 +46,7 @@ class RequestLogger:
         query the database for the number of requests made in the last ten seconds.
         '''
         cursor = conn.cursor()
-        time_10_seconds_ago = (dt.datetime.now() - dt.timedelta(seconds=10)).strftime('%Y-%m-%d %H:%M:%S')
+        time_10_seconds_ago = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=10)).strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute("SELECT SUM(call_weight) FROM REQUESTS WHERE timestamp >= ?", (time_10_seconds_ago,))
         num = cursor.fetchone()[0]
         
