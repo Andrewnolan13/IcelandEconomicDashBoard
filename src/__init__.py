@@ -1,24 +1,345 @@
 import sqlite3
 import os
+from multiprocessing import current_process 
+
 from .api import StatisticsIcelandAPI
 from .constants import SOURCE
 
-#make data directory if not exists
-os.makedirs(SOURCE.DATA.str, exist_ok=True)
+print(current_process().name)
 
-# create if not exists the database
-conn = sqlite3.connect(SOURCE.DATA.DB.str)
-c = conn.cursor()
+if current_process().name == "MainProcess": 
 
-# Write ahead logging mode for multiple readers and writing
-conn.execute("PRAGMA journal_mode=WAL;")
+    #make data directory if not exists
+    os.makedirs(SOURCE.DATA.str, exist_ok=True)
 
-#create if not exists various tables
-c.execute("""
-CREATE TABLE IF NOT EXISTS REQUESTS (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT NOT NULL,
-    call_weight REAL NOT NULL,
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-);
-""")
+    # create if not exists the database
+    conn = sqlite3.connect(SOURCE.DATA.DB.str)
+    c = conn.cursor()
+
+    # Write ahead logging mode for multiple readers and writing
+    conn.execute("PRAGMA journal_mode=WAL;")
+
+    #create if not exists various tables
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS REQUESTS (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        url TEXT NOT NULL,
+        call_weight REAL NOT NULL,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    c.execute('DROP TABLE IF EXISTS CPI;')
+    c.execute(
+    '''
+    CREATE TABLE IF NOT EXISTS CPI (
+        "Month" TEXT,
+        "Consumer price index Index" REAL,
+        "Consumer price index Monthly change, %" TEXT,
+        "Consumer price index Annual change, %" TEXT,
+        "Consumer price index Annualized rate, latest month, %" TEXT,
+        "Consumer price index Annualized rate, 3 month, %" TEXT,
+        "Consumer price index Annualized rate,  6 month, %" TEXT,
+        "Consumer price index less housing cost Index" REAL,
+        "Consumer price index less housing cost Monthly change, %" TEXT,
+        "Consumer price index less housing cost Annual change, %" TEXT,
+        "Consumer price index less housing cost Annualized rate, latest month, %" TEXT,
+        "Consumer price index less housing cost Annualized rate, 3 month, %" TEXT,
+        "Consumer price index less housing cost Annualized rate,  6 month, %" TEXT
+    );''')
+
+    c.execute('DROP TABLE IF EXISTS Interest;')
+    c.execute(
+    '''
+    CREATE TABLE IF NOT EXISTS Interest (
+        "Year" INTEGER,
+        "General savings deposits Nominal interest, % per year" REAL,
+        "General savings deposits Real interest, % per year" REAL,
+        "Time deposits Nominal interest, % per year" REAL,
+        "Time deposits Real interest, % per year" REAL,
+        "Bills of exchange 60 days Nominal interest, % per year" REAL,
+        "Bills of exchange 60 days Real interest, % per year" REAL,
+        "General loans, bonds Nominal interest, % per year" REAL,
+        "General loans, bonds Real interest, % per year" REAL,
+        "Indexed securities Nominal interest, % per year" TEXT,
+        "Indexed securities Real interest, % per year" TEXT,
+        "Penalty rates Nominal interest, % per year" TEXT,
+        "Penalty rates Real interest, % per year" TEXT
+    );''')
+
+    c.execute('DROP TABLE IF EXISTS Employment;')
+    c.execute(
+    '''
+    CREATE TABLE IF NOT EXISTS Employment (
+        "Value unit" TEXT,
+        "Employment" TEXT,
+        "Economic activity" TEXT,
+        "1991Q1" INTEGER,
+        "1991Q2" INTEGER,
+        "1991Q3" INTEGER,
+        "1991Q4" INTEGER,
+        "1992Q1" INTEGER,
+        "1992Q2" INTEGER,
+        "1992Q3" INTEGER,
+        "1992Q4" INTEGER,
+        "1993Q1" INTEGER,
+        "1993Q2" INTEGER,
+        "1993Q3" INTEGER,
+        "1993Q4" INTEGER,
+        "1994Q1" INTEGER,
+        "1994Q2" INTEGER,
+        "1994Q3" INTEGER,
+        "1994Q4" INTEGER,
+        "1995Q1" INTEGER,
+        "1995Q2" INTEGER,
+        "1995Q3" INTEGER,
+        "1995Q4" INTEGER,
+        "1996Q1" INTEGER,
+        "1996Q2" INTEGER,
+        "1996Q3" INTEGER,
+        "1996Q4" INTEGER,
+        "1997Q1" INTEGER,
+        "1997Q2" INTEGER,
+        "1997Q3" INTEGER,
+        "1997Q4" INTEGER,
+        "1998Q1" INTEGER,
+        "1998Q2" INTEGER,
+        "1998Q3" INTEGER,
+        "1998Q4" INTEGER,
+        "1999Q1" INTEGER,
+        "1999Q2" INTEGER,
+        "1999Q3" INTEGER,
+        "1999Q4" INTEGER,
+        "2000Q1" INTEGER,
+        "2000Q2" INTEGER,
+        "2000Q3" INTEGER,
+        "2000Q4" INTEGER,
+        "2001Q1" INTEGER,
+        "2001Q2" INTEGER,
+        "2001Q3" INTEGER,
+        "2001Q4" INTEGER,
+        "2002Q1" INTEGER,
+        "2002Q2" INTEGER,
+        "2002Q3" INTEGER,
+        "2002Q4" INTEGER,
+        "2003Q1" INTEGER,
+        "2003Q2" INTEGER,
+        "2003Q3" INTEGER,
+        "2003Q4" INTEGER,
+        "2004Q1" INTEGER,
+        "2004Q2" INTEGER,
+        "2004Q3" INTEGER,
+        "2004Q4" INTEGER,
+        "2005Q1" INTEGER,
+        "2005Q2" INTEGER,
+        "2005Q3" INTEGER,
+        "2005Q4" INTEGER,
+        "2006Q1" INTEGER,
+        "2006Q2" INTEGER,
+        "2006Q3" INTEGER,
+        "2006Q4" INTEGER,
+        "2007Q1" INTEGER,
+        "2007Q2" INTEGER,
+        "2007Q3" INTEGER,
+        "2007Q4" INTEGER,
+        "2008Q1" INTEGER,
+        "2008Q2" INTEGER,
+        "2008Q3" INTEGER,
+        "2008Q4" INTEGER,
+        "2009Q1" INTEGER,
+        "2009Q2" INTEGER,
+        "2009Q3" INTEGER,
+        "2009Q4" INTEGER,
+        "2010Q1" INTEGER,
+        "2010Q2" INTEGER,
+        "2010Q3" INTEGER,
+        "2010Q4" INTEGER,
+        "2011Q1" INTEGER,
+        "2011Q2" INTEGER,
+        "2011Q3" INTEGER,
+        "2011Q4" INTEGER,
+        "2012Q1" INTEGER,
+        "2012Q2" INTEGER,
+        "2012Q3" INTEGER,
+        "2012Q4" INTEGER,
+        "2013Q1" INTEGER,
+        "2013Q2" INTEGER,
+        "2013Q3" INTEGER,
+        "2013Q4" INTEGER,
+        "2014Q1" INTEGER,
+        "2014Q2" INTEGER,
+        "2014Q3" INTEGER,
+        "2014Q4" INTEGER,
+        "2015Q1" INTEGER,
+        "2015Q2" INTEGER,
+        "2015Q3" INTEGER,
+        "2015Q4" INTEGER,
+        "2016Q1" INTEGER,
+        "2016Q2" INTEGER,
+        "2016Q3" INTEGER,
+        "2016Q4" INTEGER,
+        "2017Q1" INTEGER,
+        "2017Q2" INTEGER,
+        "2017Q3" INTEGER,
+        "2017Q4" INTEGER,
+        "2018Q1" INTEGER,
+        "2018Q2" INTEGER,
+        "2018Q3" INTEGER,
+        "2018Q4" INTEGER,
+        "2019Q1" INTEGER,
+        "2019Q2" INTEGER,
+        "2019Q3" INTEGER,
+        "2019Q4" INTEGER,
+        "2020Q1" INTEGER,
+        "2020Q2" INTEGER,
+        "2020Q3" INTEGER,
+        "2020Q4" INTEGER,
+        "2021Q1" INTEGER,
+        "2021Q2" INTEGER,
+        "2021Q3" INTEGER,
+        "2021Q4" INTEGER,
+        "2022Q1" INTEGER,
+        "2022Q2" INTEGER,
+        "2022Q3" INTEGER,
+        "2022Q4" INTEGER,
+        "2023Q1" INTEGER,
+        "2023Q2" INTEGER,
+        "2023Q3" INTEGER,
+        "2023Q4" INTEGER,
+        "2024Q1" INTEGER,
+        "2024Q2" INTEGER,
+        "2024Q3" INTEGER,
+        "2024Q4" INTEGER
+    );''')
+
+    c.execute('DROP TABLE IF EXISTS GDP;')
+    c.execute(
+    '''
+    CREATE TABLE IF NOT EXISTS GDP (
+        "Value unit" TEXT,
+        "Category" TEXT,
+        "1995Q1" TEXT,
+        "1995Q2" TEXT,
+        "1995Q3" TEXT,
+        "1995Q4" TEXT,
+        "1996Q1" TEXT,
+        "1996Q2" TEXT,
+        "1996Q3" TEXT,
+        "1996Q4" TEXT,
+        "1997Q1" TEXT,
+        "1997Q2" TEXT,
+        "1997Q3" TEXT,
+        "1997Q4" TEXT,
+        "1998Q1" TEXT,
+        "1998Q2" TEXT,
+        "1998Q3" TEXT,
+        "1998Q4" TEXT,
+        "1999Q1" TEXT,
+        "1999Q2" TEXT,
+        "1999Q3" TEXT,
+        "1999Q4" TEXT,
+        "2000Q1" TEXT,
+        "2000Q2" TEXT,
+        "2000Q3" TEXT,
+        "2000Q4" TEXT,
+        "2001Q1" TEXT,
+        "2001Q2" TEXT,
+        "2001Q3" TEXT,
+        "2001Q4" TEXT,
+        "2002Q1" TEXT,
+        "2002Q2" TEXT,
+        "2002Q3" TEXT,
+        "2002Q4" TEXT,
+        "2003Q1" TEXT,
+        "2003Q2" TEXT,
+        "2003Q3" TEXT,
+        "2003Q4" TEXT,
+        "2004Q1" TEXT,
+        "2004Q2" TEXT,
+        "2004Q3" TEXT,
+        "2004Q4" TEXT,
+        "2005Q1" TEXT,
+        "2005Q2" TEXT,
+        "2005Q3" TEXT,
+        "2005Q4" TEXT,
+        "2006Q1" TEXT,
+        "2006Q2" TEXT,
+        "2006Q3" TEXT,
+        "2006Q4" TEXT,
+        "2007Q1" TEXT,
+        "2007Q2" TEXT,
+        "2007Q3" TEXT,
+        "2007Q4" TEXT,
+        "2008Q1" TEXT,
+        "2008Q2" TEXT,
+        "2008Q3" TEXT,
+        "2008Q4" TEXT,
+        "2009Q1" TEXT,
+        "2009Q2" TEXT,
+        "2009Q3" TEXT,
+        "2009Q4" TEXT,
+        "2010Q1" TEXT,
+        "2010Q2" TEXT,
+        "2010Q3" TEXT,
+        "2010Q4" TEXT,
+        "2011Q1" TEXT,
+        "2011Q2" TEXT,
+        "2011Q3" TEXT,
+        "2011Q4" TEXT,
+        "2012Q1" TEXT,
+        "2012Q2" TEXT,
+        "2012Q3" TEXT,
+        "2012Q4" TEXT,
+        "2013Q1" TEXT,
+        "2013Q2" TEXT,
+        "2013Q3" TEXT,
+        "2013Q4" TEXT,
+        "2014Q1" TEXT,
+        "2014Q2" TEXT,
+        "2014Q3" TEXT,
+        "2014Q4" TEXT,
+        "2015Q1" TEXT,
+        "2015Q2" TEXT,
+        "2015Q3" TEXT,
+        "2015Q4" TEXT,
+        "2016Q1" TEXT,
+        "2016Q2" TEXT,
+        "2016Q3" TEXT,
+        "2016Q4" TEXT,
+        "2017Q1" TEXT,
+        "2017Q2" TEXT,
+        "2017Q3" TEXT,
+        "2017Q4" TEXT,
+        "2018Q1" TEXT,
+        "2018Q2" TEXT,
+        "2018Q3" TEXT,
+        "2018Q4" TEXT,
+        "2019Q1" TEXT,
+        "2019Q2" TEXT,
+        "2019Q3" TEXT,
+        "2019Q4" TEXT,
+        "2020Q1" TEXT,
+        "2020Q2" TEXT,
+        "2020Q3" TEXT,
+        "2020Q4" TEXT,
+        "2021Q1" TEXT,
+        "2021Q2" TEXT,
+        "2021Q3" TEXT,
+        "2021Q4" TEXT,
+        "2022Q1" TEXT,
+        "2022Q2" TEXT,
+        "2022Q3" TEXT,
+        "2022Q4" TEXT,
+        "2023Q1" TEXT,
+        "2023Q2" TEXT,
+        "2023Q3" TEXT,
+        "2023Q4" TEXT,
+        "2024Q1" TEXT,
+        "2024Q2" TEXT,
+        "2024Q3" TEXT,
+        "2024Q4" TEXT
+    );''')
+
+
+    conn.commit()
+    conn.close()

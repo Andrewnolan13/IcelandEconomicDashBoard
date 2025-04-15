@@ -1,10 +1,13 @@
 import sqlite3
 import datetime as dt
-from .constants import RateLimit, SOURCE
 import re
 import requests
 import pandas as pd
 from io import StringIO
+
+
+from .constants import RateLimit, SOURCE
+
 
 pattern = re.compile(r"\d+\-\d+")
 
@@ -14,6 +17,12 @@ def toTypable(s:str) -> str:
     s = re.sub(r"\s+", "_", s)
     s = re.sub(pattern, lambda m: m.group(0).replace("-", "_to_"), s)
     return s
+
+def to_snake_case(name:str)->str:
+    """Convert a string to snake_case."""
+    name = re.sub(r'([a-z])([A-Z])', r'\1_\2', name)  # Add underscore between lowercase and uppercase letters
+    name = re.sub(r'[^a-zA-Z0-9]+', '_', name)  # non-alphanumeric characters to underscore
+    return name.lower().strip('_')  # Convert to lowercase
 
 def convert_to_df(response:requests.Request)->pd.DataFrame:
     return pd.read_csv(

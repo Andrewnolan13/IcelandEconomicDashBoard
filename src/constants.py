@@ -58,7 +58,7 @@ class PATH:
 
 DB = PATH(value = 'database.db')
 DATA = PATH(value = 'data',DB = DB)
-ASSETS = PATH(value = 'assets',ENDPOINT_TREE = PATH('endpointTree.json'))
+ASSETS = PATH(value = 'assets',ENDPOINT_TREE = PATH('endpointTree.json'),LOGS = PATH('logs'))
 SOURCE = PATH(value = abspath(join(dirname(__file__),'..')),DATA = DATA,ASSETS = ASSETS)
 
 # urls
