@@ -12,7 +12,8 @@ warnings.filterwarnings("ignore")
 pd.options.plotting.backend = "plotly"
 
 div = html.Div([
-            html.H3("Iceland Through Time"),
+            # html.H2("Iceland Through Time"),
+            html.H3("Economic Variables"),
             dcc.Dropdown(
                 id="variable-selector",
                 options=[
@@ -25,9 +26,8 @@ div = html.Div([
                 multi=False,
             ),
             html.Div(id="secondary-dropdown"),
-            html.H1("Economic Variables"),
             dcc.Graph(id="time-series-graph",config={'displayModeBar': False}),
-            html.H1("Population"),
+            html.H3("Population"),
             html.Div([
                 html.Div([
                     dcc.Graph(style={"width": "100%", "height": "100%"},id ='net_migration',config={'displayModeBar': False} )

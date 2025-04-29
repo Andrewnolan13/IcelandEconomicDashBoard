@@ -4,6 +4,12 @@ import dash_bootstrap_components as dbc
 
 from .dashboard import iceland_through_time, state_of_the_economy, utils
 
+description_of_dashboard = """
+This dashboard pulls real data from the statice.is API every minute... Although the data is mostly static, so it doesn't appear to be "real-time" - it actually is. 
+The graphs update every 10 seconds as they read from a local database.
+
+This dashboard aims to show economic data about iceland, both past and present. 
+"""
 # Initialize app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "Iceland Economic Dashboard"
@@ -23,6 +29,7 @@ app.layout = dbc.Container([
         n_intervals=0,
         disabled=True       
     ),
+    html.H1("Real Time Iceland Economic Dashboard", className="text-center", title = description_of_dashboard),
     dbc.Tabs([
         dbc.Tab(label="Iceland Through Time", tab_id="tab-time"),
         dbc.Tab(label="State of the Economy", tab_id="tab-now")
@@ -42,6 +49,10 @@ def render_tab_content(active_tab):
         return state_of_the_economy.div
 
 # callbacks for Iceland Through Time tab
+
+"""
+ CALLBACKS FOR ICELAND THROUGH TIME TAB
+"""
 app.callback(
     Output("time-series-graph", "figure"),
     Input("variable-selector", "value"),
@@ -88,13 +99,6 @@ app.callback(
     Output("interval-component", "disabled"),
     Input("play-button", "n_clicks"),
 )(utils.toggle_play_button)
-# def toggle_play_button(n_clicks:int)->tuple[str,bool,bool]:
-#     playPause = "Pause" if n_clicks % 2 == 1 else "Play"
-#     disabled = True if playPause == "Play" else False
-#     return (playPause,
-#             disabled, 
-#             not disabled # disable the other interval to reduce load
-#             )
 
 app.callback(
     Output("population-slider", "value"),
@@ -102,13 +106,11 @@ app.callback(
     Input("population-slider", "value"),
     Input("population-slider-interval", "n_intervals"),
 )(utils.play_slider)
-# def play_slider(playPause:str, value:int, n_intervals:int)->int:
-#     if playPause == "Play":
-#         return value
-#     else:
-#         return value + 1 if value+1 <= 2025 else 1850    
         
 
+"""
+ CALLBACKS FOR THE STATE OF THE ECONOMY TAB
+"""
 
 # callback for the state of the economy tab
 app.callback(
