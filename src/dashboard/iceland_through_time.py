@@ -25,30 +25,46 @@ div = html.Div([
                 multi=False,
             ),
             html.Div(id="secondary-dropdown"),
-            dcc.Graph(id="time-series-graph"),
+            html.H1("Economic Variables"),
+            dcc.Graph(id="time-series-graph",config={'displayModeBar': False}),
+            html.H1("Population"),
             html.Div([
                 html.Div([
-                    dcc.Graph(style={"width": "100%", "height": "100%"},id ='net_migration')
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id ='net_migration',config={'displayModeBar': False} )
                 ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
 
                 html.Div([
-                    dcc.Graph(style={"width": "100%", "height": "100%"},id='births_and_deaths')
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='births_and_deaths',config={'displayModeBar': False} )
                 ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
 
                 html.Div([
-                    dcc.Graph(style={"width": "100%", "height": "100%"},id='native_non_native')
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='native_non_native',config={'displayModeBar': False} )
                 ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
             ]),
             html.Div([
                 html.Div([
-                    dcc.Graph(style={"width": "100%", "height": "100%"},id='population-line-chart')
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='population-line-chart',config={'displayModeBar': False} )
                 ], style={"width": "66%", "display": "inline-block", "padding": "10px"}),
                 html.Div([
-                    dcc.Graph(style={"width": "100%", "height": "100%"},id='non-binary-chart')
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='non-binary-chart',config={'displayModeBar': False} )
                 ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
             ]),
-            dcc.Slider(id = 'population-slider',min = 1850, max = 2025, value = 2024, marks = {i:str(i) for i in range(1850,2026,5)}, step = 1),
-            dcc.Graph(id='population-pyramid-chart', style={"width": "100%", "height": "1000px"}),
+            html.Div([
+                html.Div([
+                    html.Button("Play", id="play-button", n_clicks=0),
+                ], style={"display": "inline-block", "paddingRight": "5%"}),
+                html.Div([
+                    dcc.Slider(
+                        id='population-slider',
+                        min=1850,
+                        max=2025,
+                        value=2024,
+                        marks={i: str(i) for i in range(1850, 2026, 5)},
+                        step=1
+                    ),
+                ], style={"display": "inline-block", "width": "95%"}),
+            ]),
+            dcc.Graph(id='population-pyramid-chart', style={"width": "100%", "height": "700px"},config={'displayModeBar': False} ),
         ])
 
 def update_time_series(selected:str,secondary:dict,n:int):
@@ -154,7 +170,9 @@ def charts_EmploymentBySector(df:pd.DataFrame)->go.Figure:
 # Population graphs
 def fluxFigs(n:int)->tuple[go.Figure,go.Figure]:
     conn = sqlite3.connect(SOURCE.DATA.DB.str)
-    df = pd.read_sql_query("SELECT * FROM Flux", conn)
+    df = pd.read_sql_query('''SELECT Quarter,"Total Total",Event FROM Flux
+                           WHERE Event IN ('Net migration','Births','Deaths')
+                           ''', conn)
     netMigration = (
             df.loc[lambda s: s.Event == 'Net migration',['Quarter','Total Total']]
                 .plot(x='Quarter',y='Total Total',title='Net migration in Iceland 2011-2024')
@@ -194,27 +212,39 @@ def nativeNonNative(n:int)->tuple[go.Figure]:
     conn.close()
     return fig
 
-def populationFigs(year:int,n:int)->tuple[go.Figure,go.Figure,go.Figure]:
+def populationLineChart(n:int)->go.Figure:
     conn = sqlite3.connect(SOURCE.DATA.DB.str)
-    df = pd.read_sql_query("SELECT * FROM Population", conn)
+    query = """
+    SELECT * From Population
+    WHERE Age == 'Total'
+    """
+
     line_chart = (
-            df.melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
-            .query('Age != "Total"')
-            .assign(Age=lambda s: s.Age.str.replace(r'\syears?','',regex=True).replace('Under 1','0').astype(int),
+            pd.read_sql_query(query, conn)
+            .melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
+            .assign(
                     Year=lambda s: s.Year.astype(int),
                     Population=lambda s: s.Population.replace('..','0').astype(int)
                     )
-            .groupby(['Year','Sex'])
-            .agg({'Population':'sum'}).reset_index()
             .plot(x = 'Year',y='Population',color = 'Sex')
             .update_layout(title = 'Population in Iceland 1841-2025', title_x = 0.5, uirevision = 'None',title_font=dict(size=9),showlegend = False)
             .update_yaxes(title_text = '')
             .update_xaxes(title_text = '')            
     )
+    conn.close()
+    return line_chart
+
+def nonBinaryChart(n:int)->go.Figure:
+    conn = sqlite3.connect(SOURCE.DATA.DB.str)
+    query = """
+    SELECT "2022", "2023", "2024", "2025", Sex, Age From Population
+    WHERE Age == 'Total' AND 
+    Sex == 'Non-binary/Other'
+    """
 
     non_binary_chart = (
-            df.melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
-            .query('Age == "Total" & Sex == \'Non-binary/Other\' & Year >= 2022')
+            pd.read_sql_query(query, conn)
+            .melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
             .assign(Year=lambda s: s.Year.astype(int),
                     Population=lambda s: s.Population.replace('..','0').astype(int)
                     )
@@ -223,20 +253,27 @@ def populationFigs(year:int,n:int)->tuple[go.Figure,go.Figure,go.Figure]:
             .update_layout(title_font=dict(size=9))
             .update_yaxes(title_text = '')
             .update_xaxes(title_text = '')
-    )
+    )    
+    conn.close()
+    return non_binary_chart
 
-    # Pyramid chart
+def populationPyramidChart(year:int,n:int)->go.Figure:
+    conn = sqlite3.connect(SOURCE.DATA.DB.str)
+    query = """
+    SELECT Sex, Age, "{year}" From Population
+    WHERE Age != 'Total' AND
+    Sex != 'Total' AND
+    Sex != 'Non-binary/Other'
+    """.format(year=year)
+
     frame = (
-        df.melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
-        .query('Age != "Total" & Sex != \'Total\' & Sex != \'Non-binary/Other\'')
+        pd.read_sql_query(query, conn)
+        .melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
         .assign(Age=lambda s: s.Age.str.replace(r'\syears?','',regex=True).replace('Under 1','0').astype(int),
-                Year=lambda s: s.Year.astype(int),
                 Population=lambda s: s.Population.replace('..','0').astype(int)
                 )
-        .query(f'Year == {year}')    
     )
 
-    # Pivot for plotting
     df_male = frame[frame['Sex'] == 'Males'].copy()
     df_female = frame[frame['Sex'] == 'Females'].copy()
     df_male['Population'] *= -1  # Invert male values for pyramid shape
@@ -260,8 +297,8 @@ def populationFigs(year:int,n:int)->tuple[go.Figure,go.Figure,go.Figure]:
     ))
 
     pyramid_chart.update_layout(
-        title='Population Pyramid',
-        xaxis=dict(title='Population'),
+        title=f'Iceland Population Pyramid - {year}',
+        xaxis=dict(title='Population',range = [-3500,3500]),
         yaxis=dict(title='Age', categoryorder='category ascending'),
         barmode='overlay',
         bargap=0.1,
@@ -269,13 +306,9 @@ def populationFigs(year:int,n:int)->tuple[go.Figure,go.Figure,go.Figure]:
         title_x=0.5,
         showlegend=False,
         uirevision='None',
-    )    
+    )   
 
-
-    return line_chart, non_binary_chart, pyramid_chart
-
-
-
-
+    conn.close()
+    return pyramid_chart
 
 

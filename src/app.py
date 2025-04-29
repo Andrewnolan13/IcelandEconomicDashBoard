@@ -2,7 +2,7 @@ import dash
 from dash import dcc, html, Output, Input
 import dash_bootstrap_components as dbc
 
-from .dashboard import iceland_through_time, state_of_the_economy
+from .dashboard import iceland_through_time, state_of_the_economy, utils
 
 # Initialize app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -13,8 +13,15 @@ server = app.server
 app.layout = dbc.Container([
     dcc.Interval(
         id='interval-component',
-        interval=10*1000,  # 3 seconds
-        n_intervals=0
+        interval=10*1000,  # 5 seconds
+        n_intervals=0,
+        disabled=False
+    ),
+    dcc.Interval(
+        id='population-slider-interval',
+        interval=250,  # 0.25 seconds
+        n_intervals=0,
+        disabled=True       
     ),
     dbc.Tabs([
         dbc.Tab(label="Iceland Through Time", tab_id="tab-time"),
@@ -61,11 +68,46 @@ app.callback(
 
 app.callback(
     Output("population-line-chart", "figure"),
+    Input("interval-component", "n_intervals")
+)(iceland_through_time.populationLineChart)
+
+app.callback(
     Output("non-binary-chart", "figure"),
+    Input("interval-component", "n_intervals")
+)(iceland_through_time.nonBinaryChart)
+
+app.callback(
     Output("population-pyramid-chart", "figure"),
     Input("population-slider", "value"),
-    Input("interval-component", "n_intervals")
-)(iceland_through_time.populationFigs)
+    Input("interval-component", "n_intervals"),
+)(iceland_through_time.populationPyramidChart)
+
+app.callback(
+    Output("play-button", "children"),
+    Output("population-slider-interval", "disabled"),
+    Output("interval-component", "disabled"),
+    Input("play-button", "n_clicks"),
+)(utils.toggle_play_button)
+# def toggle_play_button(n_clicks:int)->tuple[str,bool,bool]:
+#     playPause = "Pause" if n_clicks % 2 == 1 else "Play"
+#     disabled = True if playPause == "Play" else False
+#     return (playPause,
+#             disabled, 
+#             not disabled # disable the other interval to reduce load
+#             )
+
+app.callback(
+    Output("population-slider", "value"),
+    Input("play-button", "children"),
+    Input("population-slider", "value"),
+    Input("population-slider-interval", "n_intervals"),
+)(utils.play_slider)
+# def play_slider(playPause:str, value:int, n_intervals:int)->int:
+#     if playPause == "Play":
+#         return value
+#     else:
+#         return value + 1 if value+1 <= 2025 else 1850    
+        
 
 
 # callback for the state of the economy tab
