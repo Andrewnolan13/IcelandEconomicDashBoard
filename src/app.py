@@ -1,8 +1,11 @@
+import sqlite3
 import dash
 from dash import dcc, html, Output, Input
 import dash_bootstrap_components as dbc
 
 from .dashboard import iceland_through_time, state_of_the_economy, utils
+from .constants import SOURCE
+
 
 description_of_dashboard = """
 This dashboard pulls real data from the statice.is API every minute... Although the data is mostly static, so it doesn't appear to be "real-time" - it actually is. 
@@ -31,9 +34,9 @@ app.layout = dbc.Container([
     ),
     html.H1("Real Time Iceland Economic Dashboard", className="text-center", title = description_of_dashboard),
     dbc.Tabs([
+        dbc.Tab(label="Overview", tab_id="tab-now"),
         dbc.Tab(label="Iceland Through Time", tab_id="tab-time"),
-        dbc.Tab(label="State of the Economy", tab_id="tab-now")
-    ], id="tabs", active_tab="tab-time"),
+    ], id="tabs", active_tab="tab-now"),
     html.Div(id="tab-content")
 ], fluid=True)
 
@@ -112,9 +115,30 @@ app.callback(
  CALLBACKS FOR THE STATE OF THE ECONOMY TAB
 """
 
-# callback for the state of the economy tab
-app.callback(
-    Output("snapshot-graph", "figure"),
-    Output("sector-breakdown-graph", "figure"),
+@app.callback(
+    Output("consumer-price-index-text", "children"),
+    Output("population-text", "children"),
+    Output("net-migration-text", "children"),
+    Output("gross-domestic-product-text", "children"),
     Input("interval-component", "n_intervals")
-)(state_of_the_economy.update_snapshot_graphs)
+)
+def update_state_of_economy(n_intervals)->tuple[str,str,str,str]:
+    results = (
+        state_of_the_economy.getCPI(),
+        state_of_the_economy.getPopulation(),
+        state_of_the_economy.getNetMigration(),
+        state_of_the_economy.getGDP()
+    )
+    return results
+
+app.callback(
+    Output("population-stacked-pie", "figure"),
+    Input("interval-component", "n_intervals")
+)(state_of_the_economy.makeIcelandicPopulationBreakDown)
+
+app.callback(
+    Output("employment-by-economic-activity", "figure"),
+    Input("interval-component", "n_intervals")
+)(state_of_the_economy.makeEmploymentPieChart)
+
+

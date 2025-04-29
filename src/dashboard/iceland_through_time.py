@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 pd.options.plotting.backend = "plotly"
 
 div = html.Div([
-            # html.H2("Iceland Through Time"),
+            html.H2("Icelandic Economy Through Time"),
             html.H3("Economic Variables"),
             dcc.Dropdown(
                 id="variable-selector",

@@ -72,5 +72,5 @@ if __name__ == '__main__':
         print("The dashboard will continue to run in the background.")
     print("Launching Edge browser...")
     # begin hosting the dashboard
-    app.run_server(debug=True, use_reloader=False)     
+    app.run_server(debug=False, use_reloader=False)     
 
