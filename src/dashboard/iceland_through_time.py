@@ -84,6 +84,7 @@ def charts_Interest(df:pd.DataFrame,variation:str)->go.Figure:
         .plot(x = 'Year', y = variation, title = variation, kind='line', markers=True, template='plotly_white')
         .update_layout(title_x = 0.5)
         .update_yaxes(title_text = '')
+        .update_layout(uirevision = 'None')
     )
 
 def charts_grossDomesticProduct(df:pd.DataFrame,value_unit:str,variation)->go.Figure:
@@ -98,6 +99,8 @@ def charts_grossDomesticProduct(df:pd.DataFrame,value_unit:str,variation)->go.Fi
         .plot(x='Quarter', y=variation, title = f"{variation} in {value_unit}", kind='line', markers=True, template='plotly_white')
         .update_layout(title_x = 0.5)   
         .update_yaxes(title_text = '')
+        .update_layout(uirevision = 'None')
+
     )
 
 def charts_consumerPriceIndex(df:pd.DataFrame,variation:str)->go.Figure:
@@ -107,6 +110,8 @@ def charts_consumerPriceIndex(df:pd.DataFrame,variation:str)->go.Figure:
         .plot(x = 'Month', y = variation, title = f"{variation} in Iceland", kind='line', markers=True, template='plotly_white')
         .update_layout(title_x = 0.5)
         .update_yaxes(title_text = '')
+        .update_layout(uirevision = 'None')
+
     )
 
 def charts_EmploymentBySector(df:pd.DataFrame)->go.Figure:
@@ -120,6 +125,7 @@ def charts_EmploymentBySector(df:pd.DataFrame)->go.Figure:
         .melt(id_vars=['time'], var_name ='sector', value_name='Number of Jobs')
         .plot(x = 'time', y = 'Number of Jobs', color = 'sector',kind = 'area')
         .update_layout(showlegend = False)
+        .update_layout(uirevision = 'None')
     )   
 
 
