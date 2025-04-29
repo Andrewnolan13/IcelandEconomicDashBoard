@@ -26,6 +26,29 @@ div = html.Div([
             ),
             html.Div(id="secondary-dropdown"),
             dcc.Graph(id="time-series-graph"),
+            html.Div([
+                html.Div([
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id ='net_migration')
+                ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
+
+                html.Div([
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='births_and_deaths')
+                ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
+
+                html.Div([
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='native_non_native')
+                ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
+            ]),
+            html.Div([
+                html.Div([
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='population-line-chart')
+                ], style={"width": "66%", "display": "inline-block", "padding": "10px"}),
+                html.Div([
+                    dcc.Graph(style={"width": "100%", "height": "100%"},id='non-binary-chart')
+                ], style={"width": "33%", "display": "inline-block", "padding": "10px"}),
+            ]),
+            dcc.Slider(id = 'population-slider',min = 1850, max = 2025, value = 2024, marks = {i:str(i) for i in range(1850,2026,5)}, step = 1),
+            dcc.Graph(id='population-pyramid-chart', style={"width": "100%", "height": "1000px"}),
         ])
 
 def update_time_series(selected:str,secondary:dict,n:int):
@@ -127,5 +150,132 @@ def charts_EmploymentBySector(df:pd.DataFrame)->go.Figure:
         .update_layout(showlegend = False)
         .update_layout(uirevision = 'None')
     )   
+
+# Population graphs
+def fluxFigs(n:int)->tuple[go.Figure,go.Figure]:
+    conn = sqlite3.connect(SOURCE.DATA.DB.str)
+    df = pd.read_sql_query("SELECT * FROM Flux", conn)
+    netMigration = (
+            df.loc[lambda s: s.Event == 'Net migration',['Quarter','Total Total']]
+                .plot(x='Quarter',y='Total Total',title='Net migration in Iceland 2011-2024')
+                .update_layout(title_x = 0.5,uirevision = 'None',title_font=dict(size=9),showlegend = False)
+                .update_yaxes(title_text = '')
+                .update_xaxes(title_text = '')                
+    )
+    birthsAndDeaths = (
+            df.loc[lambda s: (s.Event == 'Births')+(s.Event == 'Deaths'),['Quarter','Event','Total Total']]
+                .plot(x='Quarter',y='Total Total',title='Births and Deaths in Iceland 2011-2024',color='Event')
+                .update_layout(title_x = 0.5,uirevision = 'None',title_font=dict(size=9),showlegend = False)
+                .update_yaxes(title_text = '')
+                .update_xaxes(title_text = '')                
+    )
+    conn.close()
+    return netMigration,birthsAndDeaths
+
+def nativeNonNative(n:int)->tuple[go.Figure]:
+    conn = sqlite3.connect(SOURCE.DATA.DB.str)
+    # df = pd.read_sql_query("SELECT * FROM Population_by_municipality", conn) # write sql insead of filtering w pandas?
+    query = """
+    SELECT Quarter, Municipality, "Foreign citizens", "Icelandic citizens"
+    FROM Population_by_municipality
+    WHERE Municipality = 'Total' 
+    """
+    df = pd.read_sql_query(query, conn)
+    fig = (
+            df
+            .loc[lambda s: s.Municipality == 'Total',['Quarter','Municipality','Foreign citizens','Icelandic citizens']]
+            .melt(id_vars=['Quarter','Municipality'])
+            .assign(value = lambda s: s.value.astype(float))
+            .plot(x = 'Quarter', y = 'value', color = 'variable')
+            .update_layout(title = 'Native and Non-native citizens in Iceland 2011-2024', title_x = 0.5, uirevision = 'None',title_font=dict(size=9),showlegend = False)
+            .update_yaxes(title_text = '')
+            .update_xaxes(title_text = '')
+    )
+    conn.close()
+    return fig
+
+def populationFigs(year:int,n:int)->tuple[go.Figure,go.Figure,go.Figure]:
+    conn = sqlite3.connect(SOURCE.DATA.DB.str)
+    df = pd.read_sql_query("SELECT * FROM Population", conn)
+    line_chart = (
+            df.melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
+            .query('Age != "Total"')
+            .assign(Age=lambda s: s.Age.str.replace(r'\syears?','',regex=True).replace('Under 1','0').astype(int),
+                    Year=lambda s: s.Year.astype(int),
+                    Population=lambda s: s.Population.replace('..','0').astype(int)
+                    )
+            .groupby(['Year','Sex'])
+            .agg({'Population':'sum'}).reset_index()
+            .plot(x = 'Year',y='Population',color = 'Sex')
+            .update_layout(title = 'Population in Iceland 1841-2025', title_x = 0.5, uirevision = 'None',title_font=dict(size=9),showlegend = False)
+            .update_yaxes(title_text = '')
+            .update_xaxes(title_text = '')            
+    )
+
+    non_binary_chart = (
+            df.melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
+            .query('Age == "Total" & Sex == \'Non-binary/Other\' & Year >= 2022')
+            .assign(Year=lambda s: s.Year.astype(int),
+                    Population=lambda s: s.Population.replace('..','0').astype(int)
+                    )
+            .plot(x ='Year',y='Population',title = 'Non-binary/Other citizens in Iceland 1841-2025',kind = 'bar')
+            .update_layout(title_x = 0.5, uirevision = 'None',showlegend = False)
+            .update_layout(title_font=dict(size=9))
+            .update_yaxes(title_text = '')
+            .update_xaxes(title_text = '')
+    )
+
+    # Pyramid chart
+    frame = (
+        df.melt(id_vars=['Sex','Age'],var_name='Year',value_name='Population')
+        .query('Age != "Total" & Sex != \'Total\' & Sex != \'Non-binary/Other\'')
+        .assign(Age=lambda s: s.Age.str.replace(r'\syears?','',regex=True).replace('Under 1','0').astype(int),
+                Year=lambda s: s.Year.astype(int),
+                Population=lambda s: s.Population.replace('..','0').astype(int)
+                )
+        .query(f'Year == {year}')    
+    )
+
+    # Pivot for plotting
+    df_male = frame[frame['Sex'] == 'Males'].copy()
+    df_female = frame[frame['Sex'] == 'Females'].copy()
+    df_male['Population'] *= -1  # Invert male values for pyramid shape
+
+    pyramid_chart = go.Figure()
+
+    pyramid_chart.add_trace(go.Bar(
+        y=df_male['Age'],
+        x=df_male['Population'],
+        orientation='h',
+        name='Male',
+        marker_color='blue'
+    ))
+
+    pyramid_chart.add_trace(go.Bar(
+        y=df_female['Age'],
+        x=df_female['Population'],
+        orientation='h',
+        name='Female',
+        marker_color='red'
+    ))
+
+    pyramid_chart.update_layout(
+        title='Population Pyramid',
+        xaxis=dict(title='Population'),
+        yaxis=dict(title='Age', categoryorder='category ascending'),
+        barmode='overlay',
+        bargap=0.1,
+        template='plotly_white',
+        title_x=0.5,
+        showlegend=False,
+        uirevision='None',
+    )    
+
+
+    return line_chart, non_binary_chart, pyramid_chart
+
+
+
+
 
 

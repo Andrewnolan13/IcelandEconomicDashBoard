@@ -13,7 +13,7 @@ server = app.server
 app.layout = dbc.Container([
     dcc.Interval(
         id='interval-component',
-        interval=1*1000,  # 1 second
+        interval=10*1000,  # 3 seconds
         n_intervals=0
     ),
     dbc.Tabs([
@@ -46,6 +46,27 @@ app.callback(
     Output("secondary-dropdown", "children"),
     Input("variable-selector", "value")
 )(iceland_through_time.update_secondary_dropdown)
+
+
+app.callback(
+    Output("net_migration", "figure"),
+    Output("births_and_deaths", "figure"),
+    Input("interval-component", "n_intervals")
+)(iceland_through_time.fluxFigs)
+
+app.callback(
+    Output("native_non_native", "figure"),
+    Input("interval-component", "n_intervals")
+)(iceland_through_time.nativeNonNative)
+
+app.callback(
+    Output("population-line-chart", "figure"),
+    Output("non-binary-chart", "figure"),
+    Output("population-pyramid-chart", "figure"),
+    Input("population-slider", "value"),
+    Input("interval-component", "n_intervals")
+)(iceland_through_time.populationFigs)
+
 
 # callback for the state of the economy tab
 app.callback(
