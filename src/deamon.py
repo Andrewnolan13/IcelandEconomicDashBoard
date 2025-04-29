@@ -52,8 +52,9 @@ class DataRefresher(multiprocessing.Process):
             except KeyboardInterrupt:
                 raise
             except Exception as e:
-                with open(SOURCE.ASSETS.LOG.str+f'_{multiprocessing.current_process().name}.txt', 'a') as f:
-                    f.write(f"Error refreshing {self.table_name} at {time.strftime('%Y-%m-%d %H:%M:%S')}: {e}\n")
+                with open(SOURCE.ASSETS.LOGS.str+f'_{multiprocessing.current_process().name}.txt', 'a') as f:
+                    f.write(msg := f"Error refreshing {self.table_name} at {time.strftime('%Y-%m-%d %H:%M:%S')}: {e}\n")
+                    print(msg)
                     time.sleep(self.sleep_period)                            
 
 

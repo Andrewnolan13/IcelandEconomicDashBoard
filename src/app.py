@@ -22,7 +22,7 @@ server = app.server
 app.layout = dbc.Container([
     dcc.Interval(
         id='interval-component',
-        interval=10*1000,  # 5 seconds
+        interval=3*1000,  # 5 seconds
         n_intervals=0,
         disabled=False
     ),
