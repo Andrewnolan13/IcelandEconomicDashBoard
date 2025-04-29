@@ -62,11 +62,12 @@ if __name__ == '__main__':
     processes = start_processes() # returning because I don't them to be garbage collected
     print("serving")
     # begin hosting the dashboard
+    port = int(os.environ.get("PORT", 8050))
     try:
-        app.run_server(debug=False, use_reloader=False)     
+        app.run_server(debug=False, use_reloader=False,host="0.0.0.0", port=port)     
     except KeyboardInterrupt:
         raise
     except Exception as e:
         print("Error starting the server: ", e)
-        app.run(debug=False, use_reloader=False)
+        app.run(debug=False, use_reloader=False,host="0.0.0.0", port=port)
 
