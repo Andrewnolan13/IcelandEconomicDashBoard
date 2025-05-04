@@ -3,4 +3,3 @@ database*
 venv/
 *.pyc
 __pycache__/
-*.docx
